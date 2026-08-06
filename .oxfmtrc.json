@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["./dist", "./coverage", "./.nx/cache", "./.nx/workspace-data"],
+  "singleQuote": true,
+  "printWidth": 125,
+  "trailingComma": "all",
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "react-libs",
+        "elementNamePattern": ["react", "react-**"]
+      }
+    ],
+    "groups": ["react-libs", "import", "builtin", "external", "internal", "parent", ["sibling", "index"], "unknown"]
+  }
+}
