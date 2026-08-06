@@ -37,6 +37,12 @@
     }
   ],
   "release": {
+    "projectsRelationship": "independent",
+    "changelog": {
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    },
     "version": {
       "preVersionCommand": "yarn dlx nx run-many -t build"
     }

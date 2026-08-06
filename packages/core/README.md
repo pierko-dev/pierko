@@ -1,11 +1,5 @@
-# pierko
+# Pierko
 
-This library was generated with [Nx](https://nx.dev).
+## The lightweight Node.js framework that gets out of your way.
 
-## Building
-
-Run `nx build pierko` to build the library.
-
-## Running unit tests
-
-Run `nx test pierko` to execute the unit tests via [Vitest](https://vitest.dev/).
+This package name is reserved. Development in progress.
