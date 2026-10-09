@@ -2,6 +2,7 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "ignorePatterns": ["./dist", "./coverage", "./.nx/cache", "./.nx/workspace-data"],
   "singleQuote": true,
+  "tabWidth": 2,
   "printWidth": 125,
   "trailingComma": "all",
   "sortImports": {
