@@ -1,24 +1,28 @@
-import { HttpMethod, OperationType, PathParameterType, QueryParameterType } from '../types.ts';
+import { PathParameterType, QueryParameterType } from '../types.ts';
 
+import { NormalizedActionOptions } from './action.ts';
 import { PierkoResolver } from './resolver.ts';
 
-type ActionMetadata = {
-  operation: OperationType;
-  method: HttpMethod;
-  path: string;
+type ActionMetadata<ReturnType, Path extends string> = Omit<
+  NormalizedActionOptions<ReturnType, Path>,
+  'name' | 'parameters'
+> & {
   parameters?: {
     path?: Record<string, PathParameterType>;
     query?: Record<string, QueryParameterType>;
     body?: Record<string, unknown>;
   };
-  returnType: () => any;
+  returnType: () => ReturnType;
 };
 
 export class ActionRegistry {
-  #registry = new Map<string, Map<string, ActionMetadata>>();
+  #registry = new Map<string, Map<string, ActionMetadata<any, any>>>();
 
-  register(resolver: PierkoResolver, { name, ...action }: ActionMetadata & { name: string }) {
-    const resolverActions = this.#registry.get(resolver.entityName) ?? new Map<string, ActionMetadata>();
+  register<ReturnType, Path extends string>(
+    resolver: PierkoResolver,
+    { name, ...action }: ActionMetadata<ReturnType, Path> & { name: string },
+  ) {
+    const resolverActions = this.#registry.get(resolver.entityName) ?? new Map<string, ActionMetadata<any, any>>();
 
     if (resolverActions.has(name)) {
       throw new Error(
@@ -36,7 +40,7 @@ export class ActionRegistry {
   }
 
   getActions(resolver: PierkoResolver) {
-    return this.#registry.get(resolver.entityName) ?? new Map<string, ActionMetadata>();
+    return this.#registry.get(resolver.entityName);
   }
 }
 
