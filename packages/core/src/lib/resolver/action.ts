@@ -1,14 +1,11 @@
 import { Context as HonoContext } from 'hono';
 import { ParamKeys } from 'hono/types';
-import { Mutation, Query } from 'type-graphql';
-
-import { HttpMethod, OperationType, PathParameterType, QueryParameterType } from '../types.ts';
 
 import { actionRegistry } from './action-registry.ts';
 import { PierkoResolver } from './resolver.ts';
 
 type CriticalActionOptions<Path extends string> = { operation?: OperationType; method?: HttpMethod; path?: Path };
-type OptionalActionOptions<ReturnType, Path extends string> = {
+type OptionalActionOptions<ReturnType extends ActionReturnType, Path extends string> = {
   deprecationReason?: string;
   nullable?: boolean;
   defaultValue?: ReturnType;
@@ -16,34 +13,33 @@ type OptionalActionOptions<ReturnType, Path extends string> = {
   body?: Record<string, unknown>;
   // TODO: default behavior without defining parameters (like sorting, pagination etc.)
   parameters?: {
-    path?: Record<ParamKeys<Path>, PathParameterType>;
-    query?: Record<string, QueryParameterType>;
+    path?: Record<ParamKeys<Path>, (value: unknown) => string | number>;
+    query?: Record<string, (value: unknown) => string | number | boolean | Date | [string] | [number] | [boolean] | [Date]>;
   };
 };
 
-export type ActionOptions<ReturnType, Path extends string = string> = CriticalActionOptions<Path> &
+export type ActionOptions<ReturnType extends ActionReturnType, Path extends string> = CriticalActionOptions<Path> &
   OptionalActionOptions<ReturnType, Path>;
 
-export type NormalizedActionOptions<ReturnType, Path extends string = string> = Required<CriticalActionOptions<Path>> &
+export type NormalizedActionOptions<ReturnType extends ActionReturnType, Path extends string> = Required<
+  CriticalActionOptions<Path>
+> &
   OptionalActionOptions<ReturnType, Path> & { name: string };
 
 type ActionContext<Path extends string> = {
   args: any; // TODO: map properly
-  raw: HonoContext<never, Path>;
+  raw: HonoContext<any, Path>;
 };
 
-type ActionSignature<ReturnType, Path extends string> = (context: ActionContext<Path>) => ReturnType;
+export type ActionSignature<ReturnType extends ActionReturnType = ActionReturnType, Path extends string = string> = (
+  context?: ActionContext<Path>,
+) => Awaitable<ExtractReturnType<ReturnType>>;
 
 const DEFAULT_ROUTE_METHODS = { create: 'POST', edit: 'PATCH', update: 'PATCH', delete: 'DELETE' } as const;
 
 const QUERY_KEYWORDS = ['get', 'find', 'list'];
 const MUTATION_KEYWORDS = Object.keys(DEFAULT_ROUTE_METHODS) as Array<keyof typeof DEFAULT_ROUTE_METHODS>;
 const MUTATION_METHODS = Object.values(DEFAULT_ROUTE_METHODS) as Array<HttpMethod>;
-
-const GRAPHQL_OPERATION_DECORATORS = {
-  query: Query,
-  mutation: Mutation,
-};
 
 const isQuery = ({ entityName }: PierkoResolver, methodName: string) =>
   methodName === `${entityName}s` || QUERY_KEYWORDS.some((keyword) => methodName.startsWith(keyword));
@@ -79,19 +75,24 @@ const inferActionOperation = (resolver: PierkoResolver, actionName: string, meth
 };
 
 // TODO: think of other possibilities
-const inferActionPath = (actionName: string) => {
+const inferActionPath = <Path extends string>(actionName: string) => {
   if (QUERY_KEYWORDS.some((keyword) => actionName.startsWith(`${keyword}One`))) {
-    return `/:id`;
+    return `/:id` as Path;
   }
 
-  return '/';
+  return '/' as Path;
 };
 
-const resolveActionOptions = <ReturnType>(
+const resolveActionOptions = <ReturnType extends ActionReturnType, Path extends string>(
   resolver: PierkoResolver,
   actionName: string | symbol,
-  { method: providedMethod, operation: providedOperation, path: providedPath, ...options }: ActionOptions<ReturnType> = {},
-): NormalizedActionOptions<ReturnType> => {
+  {
+    method: providedMethod,
+    operation: providedOperation,
+    path: providedPath,
+    ...options
+  }: ActionOptions<ReturnType, Path> = {},
+): NormalizedActionOptions<ReturnType, Path> => {
   if (typeof actionName !== 'string') {
     throw new Error(`Action name must be a string, got ${String(actionName)}`);
   }
@@ -121,25 +122,26 @@ const resolveActionOptions = <ReturnType>(
   };
 };
 
-type ActionReturnType = ReturnType<Parameters<typeof Query>[0]>;
-
 export function Action<ReturnType extends ActionReturnType, Path extends string>(
   returnType: () => ReturnType,
   options?: ActionOptions<ReturnType, Path>,
 ) {
-  return (
-    resolver: PierkoResolver,
+  return <MethodType extends ActionSignature<ReturnType, Path>>(
+    // oxlint-disable-next-line typescript/no-explicit-any
+    target: any,
     actionName: string | symbol,
-    descriptor: TypedPropertyDescriptor<ActionSignature<ReturnType, Path>>,
+    // oxlint-disable-next-line no-unused-vars
+    _descriptor: TypedPropertyDescriptor<MethodType>,
   ) => {
+    const resolver = target.constructor as PierkoResolver;
+
     const { body, parameters, operation, ...normalizedOptions } = resolveActionOptions(resolver, actionName, options);
 
-    const { deprecationReason, nullable, defaultValue, schemaName } = normalizedOptions;
-    const gqlOptions = { deprecationReason, nullable, defaultValue, name: schemaName };
-
-    GRAPHQL_OPERATION_DECORATORS[operation](returnType, gqlOptions)(resolver, actionName, descriptor);
-    // TODO: map parameters to GQL args - call @Arg()
-
-    actionRegistry.register(resolver, { operation, parameters: { body, ...parameters }, returnType, ...normalizedOptions });
+    actionRegistry.register(resolver.name, {
+      operation,
+      parameters: { body, ...parameters },
+      returnType,
+      ...normalizedOptions,
+    });
   };
 }

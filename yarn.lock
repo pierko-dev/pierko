@@ -1451,6 +1451,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@hono/node-server@npm:^2.1.5":
+  version: 2.1.5
+  resolution: "@hono/node-server@npm:2.1.5"
+  peerDependencies:
+    hono: ^4 || ^5.0.0-0
+  checksum: 10c0/3c3d5ffcc4a229e532530729b64db623493171bcda7b40ffbac3a46489884f700c881439d8c0d0413cd18793458ca252acedf6a9c13c8c3a024037e47974cacb
+  languageName: node
+  linkType: hard
+
 "@isaacs/fs-minipass@npm:^4.0.0":
   version: 4.0.1
   resolution: "@isaacs/fs-minipass@npm:4.0.1"
@@ -6224,6 +6233,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "pierko@workspace:packages/core"
   dependencies:
+    "@hono/node-server": "npm:^2.1.5"
     change-case: "npm:^5.4.4"
     fast-glob: "npm:^3.3.3"
     graphql: "npm:^17.0.2"

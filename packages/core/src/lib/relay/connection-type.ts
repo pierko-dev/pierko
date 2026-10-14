@@ -3,7 +3,7 @@ import {
   type Connection as RelayConnection,
   type Edge as RelayEdge,
 } from 'graphql-relay';
-import { ClassType, Field, InterfaceType } from 'type-graphql';
+import { type ClassType, Field, InterfaceType } from 'type-graphql';
 
 import { ConnectionArgs } from './connection-args.ts';
 import { PageInfo } from './page-info.ts';

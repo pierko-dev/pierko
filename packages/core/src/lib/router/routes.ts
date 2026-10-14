@@ -1,27 +1,55 @@
 import { Hono } from 'hono';
 
-import { actionRegistry } from '../resolver/action-registry.ts';
-import { resolverRegistry } from '../resolver/index.ts';
-import { PierkoResolver } from '../resolver/resolver.ts';
+import { actionRegistry, ActionSignature, PierkoResolver, resolverRegistry } from '../resolver/index.ts';
 
 import { NormalizedRouterOptions } from './index.ts';
 
-export const createRoutes = (_opts: NormalizedRouterOptions, Resolver: PierkoResolver) => {
+const loadGraphqlDecorators = async (options: NormalizedRouterOptions['graphql']) => {
+  if (!options.enabled) {
+    return;
+  }
+
+  const { Mutation, Query } = await import('type-graphql');
+
+  return {
+    mutation: Mutation,
+    query: Query,
+  };
+};
+
+export const createRoutes = async ({ graphql }: NormalizedRouterOptions, Resolver: PierkoResolver) => {
   const resolver = resolverRegistry.get(Resolver.entityName);
+  const actions = actionRegistry.getActions(Resolver.name);
+
+  if (!actions) {
+    return;
+  }
 
   const resolverRoute = new Hono();
 
-  for (const [name, action] of actionRegistry.getActions(Resolver)) {
-    if (!(name in resolver)) {
-      continue;
+  const Decorators = await loadGraphqlDecorators(graphql);
+
+  for (const [
+    name,
+    { defaultValue, deprecationReason, method, nullable, operation, path, returnType, schemaName },
+  ] of actions) {
+    if (graphql.enabled && Decorators) {
+      const gqlOptions = { deprecationReason, nullable, defaultValue, name: schemaName };
+      const descriptor = Object.getOwnPropertyDescriptor(Resolver.prototype, name);
+
+      if (descriptor) {
+        Decorators[operation](returnType, gqlOptions)(Resolver.prototype, name, descriptor);
+        // TODO: map parameters to GQL args - call @Arg()
+      }
     }
 
-    // oxlint-disable-next-line typescript/no-explicit-any
-    const fn = resolver[name as keyof typeof resolver] as any;
+    resolverRoute.on(method, path, async (context) => {
+      const action = resolver.getAction<ActionSignature>(name);
 
-    resolverRoute.on(action.method, action.path, (context) => {
       // TODO: transform context to match the action signature
-      return fn(context);
+      const response = await action({ args: [], raw: context });
+
+      return context.json(response);
     });
   }
 

@@ -1,8 +1,13 @@
+import { ClassType } from 'type-graphql';
 import { DeleteDateColumn } from 'typeorm';
 
-import { BaseEntityType } from '../entity.ts';
+import { BaseEntity, PierkoEntityTrait } from '../entity.ts';
 
-export const WithSoftDelete = (BaseClass: BaseEntityType) => {
+export const WithSoftDelete: PierkoEntityTrait<{ deletedAt: Date; delete: () => Promise<unknown> }> = <
+  Base extends ClassType<BaseEntity>,
+>(
+  BaseClass: Base,
+) => {
   class SoftDeleteTrait extends BaseClass {
     @DeleteDateColumn({ type: 'timestamptz' })
     deletedAt!: Date;
@@ -12,5 +17,6 @@ export const WithSoftDelete = (BaseClass: BaseEntityType) => {
     }
   }
 
-  return SoftDeleteTrait;
+  // oxlint-disable-next-line typescript/no-explicit-any
+  return SoftDeleteTrait as any;
 };

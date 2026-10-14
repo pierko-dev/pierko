@@ -1,8 +1,11 @@
+import { ClassType } from 'type-graphql';
 import { CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-import { BaseEntityType } from '../entity.ts';
+import { BaseEntity, PierkoEntityTrait } from '../entity.ts';
 
-export const WithTimestamps = (BaseClass: BaseEntityType) => {
+export const WithTimestamps: PierkoEntityTrait<{ createdAt: Date; updatedAt: Date }> = <Base extends ClassType<BaseEntity>>(
+  BaseClass: Base,
+) => {
   class TimestampsTrait extends BaseClass {
     @CreateDateColumn({ type: 'timestamptz' })
     createdAt!: Date;
@@ -11,5 +14,6 @@ export const WithTimestamps = (BaseClass: BaseEntityType) => {
     updatedAt!: Date;
   }
 
-  return TimestampsTrait;
+  // oxlint-disable-next-line typescript/no-explicit-any
+  return TimestampsTrait as any;
 };

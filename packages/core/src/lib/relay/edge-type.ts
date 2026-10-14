@@ -1,5 +1,5 @@
 import type { ConnectionCursor, Edge as RelayEdge } from 'graphql-relay';
-import { ClassType, Field, InterfaceType } from 'type-graphql';
+import { type ClassType, Field, InterfaceType } from 'type-graphql';
 
 export function EdgeType<NodeType extends object>(nodeName: string, nodeType: ClassType<NodeType>) {
   @InterfaceType(`${nodeName}Edge`)

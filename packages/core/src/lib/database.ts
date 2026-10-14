@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-import { ClassType, ObjectType } from 'type-graphql';
+import { type ClassType, ObjectType } from 'type-graphql';
 import { DataSource, DataSourceOptions, Entity as TypeOrmEntity } from 'typeorm';
 
 import { isPierkoEntity } from './entity/index.ts';

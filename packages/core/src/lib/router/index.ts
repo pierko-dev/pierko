@@ -56,6 +56,19 @@ export const initializeRouter = async (options: PierkoRouterOptions) => {
       TypeGraphqlResolver()(Resolver);
     }
 
-    app.route(Resolver.routePath, createRoutes(normalizedOptions, Resolver));
+    const routes = await createRoutes(normalizedOptions, Resolver);
+
+    if (!routes) {
+      continue;
+    }
+
+    app.route(Resolver.routePath, routes);
   }
+
+  // TODO: Start Yoga
+  // if (graphql.enabled) {
+  //   app.post('/graphql')
+  // }
+
+  return app;
 };
